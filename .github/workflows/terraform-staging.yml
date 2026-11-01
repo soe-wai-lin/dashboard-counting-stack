@@ -71,6 +71,9 @@ jobs:
         with:
           terraform_version: 1.8.5
 
+      - name: Debug GitHub OIDC claims
+        uses: github/actions-oidc-debugger@v1
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -121,8 +124,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_TERRAFORM_STAGING_APPLY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Download staging plan
         uses: actions/download-artifact@v4
