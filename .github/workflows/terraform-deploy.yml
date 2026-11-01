@@ -3,44 +3,37 @@ name: terraform-deploy
 on:
   push:
     branches:
-      - main
+      - '**'
     paths:
-      - 'stacks/staging/**'
+      - 'stacks/**'
       - 'modules/**'
-      - 'env/staging/**'
+      - 'env/**'
       - '.github/workflows/terraform-deploy.yml'
 
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Environment to deploy
-        required: true
-        type: choice
-        default: staging
-        options:
-          - staging
-          - production
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'stacks/**'
+      - 'modules/**'
+      - 'env/**'
+      - '.github/workflows/terraform-deploy.yml'
 
 permissions:
   contents: read
-  id-token: write
+
+concurrency:
+  group: terraform-deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   AWS_REGION: ap-southeast-1
   TF_IN_AUTOMATION: 'true'
 
 jobs:
-
-  plan:
+  format:
     runs-on: ubuntu-latest
-
-    # For now push = staging.
-    # Manual workflow = selected environment.
-    environment:
-      name: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
-
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -49,81 +42,102 @@ jobs:
         with:
           terraform_version: 1.8.5
 
-      - name: Resolve environment
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            ENV="${{ inputs.environment }}"
-          else
-            ENV="staging"
-          fi
+      - name: Terraform format
+        run: terraform fmt -check -recursive
 
-          echo "TARGET_ENV=$ENV" >> "$GITHUB_ENV"
+  validate:
+    needs: format
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        environment:
+          - staging
+          - production
 
-          case "$ENV" in
-            staging)
-              echo "TF_DIR=stacks/staging" >> "$GITHUB_ENV"
-              echo "TF_VARS=../../env/staging/dashboard-counting-stack.tfvars" >> "$GITHUB_ENV"
-              ;;
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            production)
-              echo "TF_DIR=stacks/production" >> "$GITHUB_ENV"
-              echo "TF_VARS=../../env/production/dashboard-counting-stack.tfvars" >> "$GITHUB_ENV"
-              ;;
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
 
-            *)
-              echo "Unsupported environment: $ENV"
-              exit 1
-              ;;
-          esac
+      - name: Terraform init
+        working-directory: stacks/${{ matrix.environment }}
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        working-directory: stacks/${{ matrix.environment }}
+        run: terraform validate
+
+  plan:
+    needs:
+      - format
+      - validate
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: staging
+            plan_role_var: AWS_TERRAFORM_PLAN_ROLE_STAGING
+          - environment: production
+            plan_role_var: AWS_TERRAFORM_PLAN_ROLE_PRODUCTION
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_TERRAFORM_ROLE }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars[matrix.plan_role_var] }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify AWS identity
-        run: |
-          aws sts get-caller-identity
-
-      - name: Terraform format
-        working-directory: ${{ env.TF_DIR }}
-        run: terraform fmt -check -recursive
-
       - name: Terraform init
-        working-directory: ${{ env.TF_DIR }}
+        working-directory: stacks/${{ matrix.environment }}
         run: terraform init -reconfigure -input=false
 
-      - name: Terraform validate
-        working-directory: ${{ env.TF_DIR }}
-        run: terraform validate
-
       - name: Terraform plan
-        working-directory: ${{ env.TF_DIR }}
+        working-directory: stacks/${{ matrix.environment }}
         run: |
           terraform plan \
-            -var-file="${{ env.TF_VARS }}" \
+            -var-file="../../env/${{ matrix.environment }}/dashboard-counting-stack.tfvars" \
             -lock-timeout=5m \
             -out=tfplan
 
       - name: Upload Terraform plan
         uses: actions/upload-artifact@v4
         with:
-          name: tfplan-${{ env.TARGET_ENV }}-${{ github.run_id }}
-          path: ${{ env.TF_DIR }}/tfplan
+          name: tfplan-${{ matrix.environment }}-${{ github.run_id }}
+          path: stacks/${{ matrix.environment }}/tfplan
+          retention-days: 1
 
-  apply:
+  apply-staging:
     needs: plan
-
-    if: github.event_name == 'workflow_dispatch'
-
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
     environment:
-      name: ${{ inputs.environment }}
+      name: staging
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: terraform-apply-staging
+      cancel-in-progress: false
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -132,26 +146,49 @@ jobs:
         with:
           terraform_version: 1.8.5
 
-      - name: Resolve environment
-        run: |
-          ENV="${{ inputs.environment }}"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_TERRAFORM_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
 
-          echo "TARGET_ENV=$ENV" >> "$GITHUB_ENV"
+      - name: Download staging plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-staging-${{ github.run_id }}
+          path: stacks/staging
 
-          case "$ENV" in
-            staging)
-              echo "TF_DIR=stacks/staging" >> "$GITHUB_ENV"
-              ;;
+      - name: Terraform init
+        working-directory: stacks/staging
+        run: terraform init -reconfigure -input=false
 
-            production)
-              echo "TF_DIR=stacks/production" >> "$GITHUB_ENV"
-              ;;
+      - name: Terraform apply
+        working-directory: stacks/staging
+        run: terraform apply -input=false tfplan
 
-            *)
-              echo "Unsupported environment: $ENV"
-              exit 1
-              ;;
-          esac
+  apply-production:
+    needs:
+      - plan
+      - apply-staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: terraform-apply-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -159,20 +196,16 @@ jobs:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/${{ vars.AWS_TERRAFORM_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify AWS identity
-        run: |
-          aws sts get-caller-identity
-
-      - name: Download Terraform plan
+      - name: Download production plan
         uses: actions/download-artifact@v4
         with:
-          name: tfplan-${{ env.TARGET_ENV }}-${{ github.run_id }}
-          path: ${{ env.TF_DIR }}
+          name: tfplan-production-${{ github.run_id }}
+          path: stacks/production
 
       - name: Terraform init
-        working-directory: ${{ env.TF_DIR }}
+        working-directory: stacks/production
         run: terraform init -reconfigure -input=false
 
       - name: Terraform apply
-        working-directory: ${{ env.TF_DIR }}
+        working-directory: stacks/production
         run: terraform apply -input=false tfplan
