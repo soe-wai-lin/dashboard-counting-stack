@@ -90,7 +90,7 @@ jobs:
         working-directory: stacks/staging
         run: |
           terraform plan \
-            -var-file="../../env/staging/dashboard-counting-stack.tfvars" \
+            # -var-file="../../env/staging/dashboard-counting-stack.tfvars" \
             -lock-timeout=5m \
             -out=tfplan
 
