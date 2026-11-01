@@ -1,0 +1,136 @@
+name: Terraform Staging
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'stacks/staging/**'
+      - 'modules/**'
+      - 'env/staging/**'
+      - '.github/workflows/terraform-staging.yml'
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'stacks/staging/**'
+      - 'modules/**'
+      - 'env/staging/**'
+      - '.github/workflows/terraform-staging.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-1
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform format
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        working-directory: stacks/staging
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        working-directory: stacks/staging
+        run: terraform validate
+
+  plan:
+    needs: validate
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_STAGING_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        working-directory: stacks/staging
+        run: terraform init -reconfigure -input=false
+
+      - name: Terraform plan
+        working-directory: stacks/staging
+        run: |
+          terraform plan \
+            -var-file="../../env/staging/dashboard-counting-stack.tfvars" \
+            -lock-timeout=5m \
+            -out=tfplan
+
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-staging-${{ github.run_id }}
+          path: stacks/staging/tfplan
+          retention-days: 1
+
+  apply:
+    needs: plan
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: terraform-apply-staging
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download staging plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-staging-${{ github.run_id }}
+          path: stacks/staging
+
+      - name: Terraform init
+        working-directory: stacks/staging
+        run: terraform init -reconfigure -input=false
+
+      - name: Terraform apply
+        working-directory: stacks/staging
+        run: terraform apply -input=false tfplan
