@@ -85,8 +85,7 @@ jobs:
         working-directory: stacks/production
         run: |
           terraform plan \
-            # -var-file="../../env/production/dashboard-counting-stack.tfvars" \
-            # -lock-timeout=5m \
+            -lock-timeout=5m \
             -out=tfplan
 
       - name: Upload production plan
