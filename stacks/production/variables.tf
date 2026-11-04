@@ -50,32 +50,32 @@ variable "key_name" {
 
 variable "dashboard_asg_min" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "dashboard_asg_max" {
   type    = number
-  default = 4
+  default = 1
 }
 
 variable "dashboard_asg_desired_capacity" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "counting_asg_min" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "counting_asg_max" {
   type    = number
-  default = 4
+  default = 1
 }
 
 variable "counting_asg_desired_capacity" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "dashboard_tg_port" {
