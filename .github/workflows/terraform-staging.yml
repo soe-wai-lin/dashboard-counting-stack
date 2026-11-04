@@ -77,9 +77,9 @@ jobs:
           role-to-assume: ${{ vars.AWS_TERRAFORM_STAGING_PLAN_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify AWS Identity
-        run: |
-          aws sts get-caller-identity
+      # - name: Verify AWS Identity
+      #   run: |
+      #     aws sts get-caller-identity
 
       - name: Terraform init
         working-directory: stacks/staging
