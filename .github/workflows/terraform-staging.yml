@@ -31,7 +31,7 @@ env:
   TF_IN_AUTOMATION: 'true'
 
 jobs:
-  validate:
+  staging-validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -53,8 +53,8 @@ jobs:
         working-directory: stacks/staging
         run: terraform validate
 
-  plan:
-    needs: validate
+  staging-plan:
+    needs: staging-validate
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment:
@@ -77,9 +77,9 @@ jobs:
           role-to-assume: ${{ vars.AWS_TERRAFORM_STAGING_PLAN_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify AWS Identity
-        run: |
-          aws sts get-caller-identity
+      # - name: Verify AWS Identity
+      #   run: |
+      #     aws sts get-caller-identity
 
       - name: Terraform init
         working-directory: stacks/staging
@@ -99,8 +99,8 @@ jobs:
           path: stacks/staging/tfplan
           retention-days: 1
 
-  apply:
-    needs: plan
+  staging-apply:
+    needs: staging-plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
@@ -118,7 +118,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: 1.8.5
+          terraform_version: 1.16.6
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
