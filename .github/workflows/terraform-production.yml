@@ -132,10 +132,7 @@ jobs:
         working-directory: stacks/production
         run: terraform init -reconfigure -input=false
 
-      # - name: Terraform apply
-      #   working-directory: stacks/production
-      #   run: terraform apply -input=false tfplan
-
-      - name: Terraform destroy
+      - name: Terraform apply
         working-directory: stacks/production
-        run: terraform destroy -input=false tfplan
+        run: terraform apply -input=false tfplan
+
