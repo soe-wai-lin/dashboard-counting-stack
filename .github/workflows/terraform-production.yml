@@ -31,7 +31,7 @@ env:
   TF_IN_AUTOMATION: 'true'
 
 jobs:
-  validate:
+  production-validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -53,8 +53,8 @@ jobs:
         working-directory: stacks/production
         run: terraform validate
 
-  plan:
-    needs: validate
+  production-plan:
+    needs: production-validate
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment:
@@ -86,7 +86,7 @@ jobs:
         run: |
           terraform plan \
             # -var-file="../../env/production/dashboard-counting-stack.tfvars" \
-            -lock-timeout=5m \
+            # -lock-timeout=5m \
             -out=tfplan
 
       - name: Upload production plan
@@ -96,8 +96,8 @@ jobs:
           path: stacks/production/tfplan
           retention-days: 1
 
-  apply:
-    needs: plan
+  production-apply:
+    needs: production-plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
