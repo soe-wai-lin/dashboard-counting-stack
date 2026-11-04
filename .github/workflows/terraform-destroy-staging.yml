@@ -1,0 +1,122 @@
+name: Terraform Destroy Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: Type DESTROY to confirm that all staging resources will be deleted
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-destroy-staging
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-southeast-1
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "Destroy workflows can only run from main." >&2
+          exit 1
+
+      - name: Require explicit confirmation
+        env:
+          CONFIRM_DESTROY: ${{ inputs.confirm_destroy }}
+        run: |
+          if [ "$CONFIRM_DESTROY" != "DESTROY" ]; then
+            echo "Type DESTROY in the workflow input to continue." >&2
+            exit 1
+          fi
+
+  plan:
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_STAGING_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        working-directory: stacks/staging
+        run: terraform init -reconfigure -input=false
+
+      - name: Create destroy plan
+        working-directory: stacks/staging
+        run: |
+          terraform plan \
+            -destroy \
+            -lock-timeout=5m \
+            -out=tfplan
+          terraform show -no-color tfplan > tfplan.txt
+          echo "Review the uploaded staging destroy plan before approving the protected destroy job." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload staging destroy plan
+        uses: actions/upload-artifact@v7
+        with:
+          name: tfplan-destroy-staging-${{ github.run_id }}
+          path: |
+            stacks/staging/tfplan
+            stacks/staging/tfplan.txt
+          retention-days: 1
+
+  destroy:
+    needs: plan
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_TERRAFORM_STAGING_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download staging destroy plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-destroy-staging-${{ github.run_id }}
+          path: stacks/staging
+
+      - name: Terraform init
+        working-directory: stacks/staging
+        run: terraform init -reconfigure -input=false
+
+      - name: Apply approved destroy plan
+        working-directory: stacks/staging
+        run: terraform apply -input=false tfplan
