@@ -463,8 +463,8 @@ resource "aws_autoscaling_group" "dashboard_pink" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50
-      max_healthy_percentage = 200
+      min_healthy_percentage = 100
+      max_healthy_percentage = 100
       instance_warmup        = 180
       skip_matching          = true
       auto_rollback          = true
@@ -504,8 +504,8 @@ resource "aws_autoscaling_group" "dashboard_green" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50
-      max_healthy_percentage = 200
+      min_healthy_percentage = 100
+      max_healthy_percentage = 100
       instance_warmup        = 180
       skip_matching          = true
       auto_rollback          = true
@@ -540,6 +540,16 @@ resource "aws_autoscaling_group" "counting" {
   launch_template {
     id      = aws_launch_template.counting.id
     version = "$Latest"
+  }
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 100
+      max_healthy_percentage = 100
+      instance_warmup        = 180
+      skip_matching          = true
+      auto_rollback          = true
+    }
   }
 
   health_check_type         = "ELB"
