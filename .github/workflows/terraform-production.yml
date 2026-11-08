@@ -55,7 +55,7 @@ jobs:
 
   production-tflint:
     name: Production TFLint
-    needs: production-validate
+    needs: Production-validate
     runs-on: ubuntu-latest
     permissions:
       contents: read 
@@ -91,7 +91,7 @@ jobs:
     name: Production DevSecOps Scan
     runs-on: ubuntu-latest
     needs: 
-      - production-validate
+      - Production-validate
       - production-tflint
     permissions:
       contents: read
