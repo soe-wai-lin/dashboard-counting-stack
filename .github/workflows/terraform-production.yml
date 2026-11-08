@@ -124,12 +124,12 @@ jobs:
     #        -d modules \
     #        --framework terraform
 
-     - name: Install Trivy
-       uses: aquasecurity/trivy-action@v0.36.0
-       with:
-         scan-type: 'fs'
-         scan-ref: '.'
-         cache: 'false'
+    #  - name: Install Trivy
+    #    uses: aquasecurity/trivy-action@v0.36.0
+    #    with:
+    #      scan-type: 'fs'
+    #      scan-ref: '.'
+    #      cache: 'false'
        
     #  - name: Trivy - Production IaC Scan
     #    run: |
@@ -149,7 +149,8 @@ jobs:
     needs: 
       - Production-security
       - Production-tflint
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment:
       name: production
