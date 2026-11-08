@@ -348,6 +348,7 @@ resource "aws_launch_template" "dashboard_pink" {
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   key_name      = var.key_name
+  update_default_version = "true"
 
   metadata_options {
     http_endpoint               = "enabled"
@@ -418,6 +419,7 @@ resource "aws_launch_template" "counting" {
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   key_name      = var.key_name
+  update_default_version = "true"
 
   vpc_security_group_ids = [aws_security_group.counting.id]
   metadata_options {
@@ -457,6 +459,16 @@ resource "aws_autoscaling_group" "dashboard_pink" {
   launch_template {
     id      = aws_launch_template.dashboard_pink.id
     version = "$Latest"
+  }
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+      max_healthy_percentage = 200
+      instance_warmup        = 180
+      skip_matching          = true
+      auto_rollback          = true
+    }
   }
 
   health_check_type         = "ELB"

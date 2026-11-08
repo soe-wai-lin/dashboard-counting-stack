@@ -1,8 +1,6 @@
 #!/bin/bash
 
 sudo useradd -r -s /usr/sbin/nologin dashboard-admin
-sudo useradd -r -s /usr/sbin/nologin testuser
-sudo useradd -r -s /usr/sbin/nologin testuser1
 
 sudo mkdir -p /opt/dashboard
 sudo mkdir -p /etc/dashboard

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 sudo useradd -r -s /usr/sbin/nologin counting-admin
+sudo useradd -r -s /usr/sbin/nologin test-user
 sudo mkdir -p /opt/counting
 sudo mkdir -p /etc/counting
 sudo mkdir -p /var/lib/counting
