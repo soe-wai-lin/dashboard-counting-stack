@@ -53,7 +53,7 @@ jobs:
         working-directory: stacks/production
         run: terraform validate
 
-  production-tflint:
+  Production-tflint:
     name: Production TFLint
     needs: Production-validate
     runs-on: ubuntu-latest
@@ -85,14 +85,14 @@ jobs:
 
       - name: TFLint - Production Environment
         run: tflint --config="${GITHUB_WORKSPACE}/.tflint.hcl" --format=compact
-        working-directory: env/production
+        working-directory: stacks/production
 
-  production-security:
+  Production-security:
     name: Production DevSecOps Scan
     runs-on: ubuntu-latest
     needs: 
       - Production-validate
-      - production-tflint
+      - Production-tflint
     permissions:
       contents: read
 
@@ -145,10 +145,11 @@ jobs:
     #        --exit-code 1 \
     #        modules
 
-  production-plan:
+  Production-plan:
     needs: 
-      - production-validate
-      - production-security
+      - Production-validate
+      - Production-security
+      - Production-tflint
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment:
@@ -189,8 +190,8 @@ jobs:
           path: stacks/production/tfplan
           retention-days: 1
 
-  production-apply:
-    needs: production-plan
+  Production-apply:
+    needs: Production-plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
