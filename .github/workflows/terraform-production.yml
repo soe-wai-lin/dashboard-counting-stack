@@ -124,12 +124,12 @@ jobs:
     #        -d modules \
     #        --framework terraform
 
-     - name: Install Trivy
-       uses: aquasecurity/trivy-action@v0.36.0
-       with:
-         scan-type: 'fs'
-         scan-ref: '.'
-         cache: 'false'
+    #  - name: Install Trivy
+    #    uses: aquasecurity/trivy-action@v0.36.0
+    #    with:
+    #      scan-type: 'fs'
+    #      scan-ref: '.'
+    #      cache: 'false'
        
     #  - name: Trivy - Production IaC Scan
     #    run: |
