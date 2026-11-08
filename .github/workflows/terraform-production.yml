@@ -89,7 +89,7 @@ jobs:
            --framework terraform
 
      - name: Install Trivy
-       uses: aquasecurity/setup-trivy@v0.2.3
+       uses: aquasecurity/trivy-action@v0.36.0
        
      - name: Trivy - Production IaC Scan
        run: |
