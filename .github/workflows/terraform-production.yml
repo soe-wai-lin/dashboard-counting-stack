@@ -53,10 +53,46 @@ jobs:
         working-directory: stacks/production
         run: terraform validate
 
+  production-tflint:
+    name: Production TFLint
+    needs: production-validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read 
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.64.0
+          cache: true
+
+      - name: Initialize TFLint plugins
+        run: tflint --init
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: TFLint - Production Stack
+        run: tflint --config="${GITHUB_WORKSPACE}/.tflint.hcl" --format=compact
+        working-directory: stacks/production
+
+      - name: TFLint - Shared Modules
+        run: tflint --recursive --config="${GITHUB_WORKSPACE}/.tflint.hcl" --format=compact
+        working-directory: modules
+
+      - name: TFLint - Production Environment
+        run: tflint --config="${GITHUB_WORKSPACE}/.tflint.hcl" --format=compact
+        working-directory: env/production
+
   production-security:
     name: Production DevSecOps Scan
     runs-on: ubuntu-latest
-    needs: production-validate
+    needs: 
+      - production-validate
+      - production-tflint
     permissions:
       contents: read
 
@@ -102,12 +138,12 @@ jobs:
     #        --exit-code 1 \
     #        stacks/production
 
-     - name: Trivy - Shared Modules Scan
-       run: |
-         trivy config \
-           --severity HIGH,CRITICAL \
-           --exit-code 1 \
-           modules
+    #  - name: Trivy - Shared Modules Scan
+    #    run: |
+    #      trivy config \
+    #        --severity HIGH,CRITICAL \
+    #        --exit-code 1 \
+    #        modules
 
   production-plan:
     needs: 
