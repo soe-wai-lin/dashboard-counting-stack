@@ -78,7 +78,8 @@ resource "aws_nat_gateway" "this" {
   # subnet_id     = aws_subnet.public[0].id
 
   availability_mode = "regional"
-  connectivity_type = "public"
+  # connectivity_type = "public"
+  vpc_id           = aws_vpc.this.id
 
   # depends_on = [aws_internet_gateway.this]
 
