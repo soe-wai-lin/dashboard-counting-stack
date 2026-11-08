@@ -383,6 +383,7 @@ resource "aws_launch_template" "dashboard_green" {
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   key_name      = var.key_name
+  update_default_version = "true"
 
   vpc_security_group_ids = [aws_security_group.dashboard.id]
   metadata_options {
