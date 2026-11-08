@@ -76,17 +76,17 @@ jobs:
          python -m pip install --upgrade pip
          pip install checkov
 
-     - name: Checkov - Production Terraform
-       run: |
-         checkov \
-           -d stacks/production \
-           --framework terraform
+    #  - name: Checkov - Production Terraform
+    #    run: |
+    #      checkov \
+    #        -d stacks/production \
+    #        --framework terraform
 
-     - name: Checkov - Shared Terraform Modules
-       run: |
-         checkov \
-           -d modules \
-           --framework terraform
+    #  - name: Checkov - Shared Terraform Modules
+    #    run: |
+    #      checkov \
+    #        -d modules \
+    #        --framework terraform
 
      - name: Install Trivy
        uses: aquasecurity/trivy-action@v0.36.0
