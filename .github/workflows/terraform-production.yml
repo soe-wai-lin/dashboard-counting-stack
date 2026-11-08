@@ -3,7 +3,8 @@ name: Terraform Production
 on:
   push:
     branches:
-      - '**'
+      # - '**'
+      - 'production'
     paths:
       - 'stacks/production/**'
       - 'modules/**'
