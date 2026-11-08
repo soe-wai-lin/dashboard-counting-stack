@@ -40,14 +40,14 @@ resource "aws_security_group" "bastion" {
   })
 }
 
-resource "aws_security_group_rule" "bastion_ingress_ssh" {
-  type              = "ingress"
-  from_port         = var.ssh_port
-  to_port           = var.ssh_port
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.bastion.id
-}
+# resource "aws_security_group_rule" "bastion_ingress_ssh" {
+#   type              = "ingress"
+#   from_port         = var.ssh_port
+#   to_port           = var.ssh_port
+#   protocol          = "tcp"
+#   cidr_blocks       = ["0.0.0.0/0"]
+#   security_group_id = aws_security_group.bastion.id
+# }
 
 resource "aws_security_group_rule" "bastion_egress_https" {
   type              = "egress"
@@ -207,12 +207,14 @@ resource "aws_security_group_rule" "counting_egress_https" {
 }
 
 resource "aws_instance" "bastion" {
-  ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = var.instance_type
-  subnet_id                   = var.public_subnet_ids[0]
-  key_name                    = var.key_name
-  vpc_security_group_ids      = [aws_security_group.bastion.id]
-  associate_public_ip_address = true
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+  # subnet_id                   = var.public_subnet_ids[0]
+  subnet_id              = var.private_subnet_ids[0]
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.bastion.id]
+  # associate_public_ip_address = true
+  iam_instance_profile = aws_iam_instance_profile.bastion_ssm.name
 
   root_block_device {
     encrypted = true
