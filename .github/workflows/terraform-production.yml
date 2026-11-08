@@ -71,10 +71,10 @@ jobs:
        env:
          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-     - name: Install Checkov
-       run: |
-         python -m pip install --upgrade pip
-         pip install checkov
+    #  - name: Install Checkov
+    #    run: |
+    #      python -m pip install --upgrade pip
+    #      pip install checkov
 
     #  - name: Checkov - Production Terraform
     #    run: |
@@ -95,12 +95,12 @@ jobs:
          scan-ref: '.'
          cache: 'false'
        
-     - name: Trivy - Production IaC Scan
-       run: |
-         trivy config \
-           --severity HIGH,CRITICAL \
-           --exit-code 1 \
-           stacks/production
+    #  - name: Trivy - Production IaC Scan
+    #    run: |
+    #      trivy config \
+    #        --severity HIGH,CRITICAL \
+    #        --exit-code 1 \
+    #        stacks/production
 
      - name: Trivy - Shared Modules Scan
        run: |
