@@ -417,7 +417,7 @@ resource "aws_launch_template" "counting" {
   key_name      = var.key_name
 
   vpc_security_group_ids = [aws_security_group.counting.id]
-   metadata_options {
+  metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
     http_put_response_hop_limit = 1
