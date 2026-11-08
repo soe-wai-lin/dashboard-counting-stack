@@ -213,6 +213,10 @@ resource "aws_instance" "bastion" {
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.bastion.id]
   associate_public_ip_address = true
+  
+  root_block_device {
+    encrypted = true
+  }
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-bastion"
