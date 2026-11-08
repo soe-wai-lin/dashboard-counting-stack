@@ -344,10 +344,10 @@ resource "aws_lb_listener" "counting" {
 }
 
 resource "aws_launch_template" "dashboard_pink" {
-  name_prefix   = "${var.environment}-dashboard-pink-"
-  image_id      = data.aws_ami.amazon_linux.id
-  instance_type = var.instance_type
-  key_name      = var.key_name
+  name_prefix            = "${var.environment}-dashboard-pink-"
+  image_id               = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type
+  key_name               = var.key_name
   update_default_version = "true"
 
   metadata_options {
@@ -415,10 +415,10 @@ resource "aws_launch_template" "dashboard_green" {
 }
 
 resource "aws_launch_template" "counting" {
-  name_prefix   = "${var.environment}-counting-"
-  image_id      = data.aws_ami.amazon_linux.id
-  instance_type = var.instance_type
-  key_name      = var.key_name
+  name_prefix            = "${var.environment}-counting-"
+  image_id               = data.aws_ami.amazon_linux.id
+  instance_type          = var.instance_type
+  key_name               = var.key_name
   update_default_version = "true"
 
   vpc_security_group_ids = [aws_security_group.counting.id]
