@@ -17,8 +17,8 @@ on:
       - main
     paths:
       - 'stacks/production/**'
-      - 'modules/**'
-      - 'env/production/**'
+      # - 'modules/**'
+      # - 'env/production/**'
       - '.github/workflows/terraform-production.yml'
 
 permissions:
