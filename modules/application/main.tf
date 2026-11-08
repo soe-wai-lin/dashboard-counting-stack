@@ -40,14 +40,14 @@ resource "aws_security_group" "bastion" {
   })
 }
 
-resource "aws_security_group_rule" "bastion_ingress_ssh" {
-  type              = "ingress"
-  from_port         = var.ssh_port
-  to_port           = var.ssh_port
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.bastion.id
-}
+# resource "aws_security_group_rule" "bastion_ingress_ssh" {
+#   type              = "ingress"
+#   from_port         = var.ssh_port
+#   to_port           = var.ssh_port
+#   protocol          = "tcp"
+#   cidr_blocks       = ["0.0.0.0/0"]
+#   security_group_id = aws_security_group.bastion.id
+# }
 
 resource "aws_security_group_rule" "bastion_egress_https" {
   type              = "egress"
@@ -207,11 +207,18 @@ resource "aws_security_group_rule" "counting_egress_https" {
 }
 
 resource "aws_instance" "bastion" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = var.instance_type
-  subnet_id              = var.public_subnet_ids[0]
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = var.instance_type
+  # subnet_id                   = var.public_subnet_ids[0]
+  subnet_id              = var.private_subnet_ids[0]
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.bastion.id]
+  # associate_public_ip_address = true
+  iam_instance_profile = aws_iam_instance_profile.bastion_ssm.name
+
+  root_block_device {
+    encrypted = true
+  }
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-bastion"
@@ -342,6 +349,15 @@ resource "aws_launch_template" "dashboard_pink" {
   instance_type = var.instance_type
   key_name      = var.key_name
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+  monitoring {
+    enabled = true
+  }
+
   vpc_security_group_ids = [aws_security_group.dashboard.id]
 
   user_data = base64encode(templatefile("${path.module}/templates/dashboard.sh.tpl", {
@@ -369,6 +385,14 @@ resource "aws_launch_template" "dashboard_green" {
   key_name      = var.key_name
 
   vpc_security_group_ids = [aws_security_group.dashboard.id]
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+  monitoring {
+    enabled = true
+  }
 
   user_data = base64encode(templatefile("${path.module}/templates/dashboard-green.sh.tpl", {
     counting_alb_dns = aws_lb.counting.dns_name
@@ -395,6 +419,14 @@ resource "aws_launch_template" "counting" {
   key_name      = var.key_name
 
   vpc_security_group_ids = [aws_security_group.counting.id]
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+  monitoring {
+    enabled = true
+  }
 
   user_data = base64encode(file("${path.module}/templates/counting.sh"))
 
