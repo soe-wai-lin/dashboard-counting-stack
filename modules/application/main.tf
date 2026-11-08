@@ -489,6 +489,17 @@ resource "aws_autoscaling_group" "dashboard_green" {
     version = "$Latest"
   }
 
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+      max_healthy_percentage = 200
+      instance_warmup        = 180
+      skip_matching            = true
+      auto_rollback             = true
+    }
+  }
+
   health_check_type         = "ELB"
   health_check_grace_period = 300
 
