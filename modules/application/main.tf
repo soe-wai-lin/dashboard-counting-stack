@@ -495,8 +495,8 @@ resource "aws_autoscaling_group" "dashboard_green" {
       min_healthy_percentage = 50
       max_healthy_percentage = 200
       instance_warmup        = 180
-      skip_matching            = true
-      auto_rollback             = true
+      skip_matching          = true
+      auto_rollback          = true
     }
   }
 
