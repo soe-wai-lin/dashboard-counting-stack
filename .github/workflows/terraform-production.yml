@@ -5,6 +5,7 @@ on:
     branches:
       # - '**'
       - 'production'
+      - 'main'
     paths:
       - 'stacks/production/**'
       - 'modules/**'
