@@ -3,7 +3,9 @@ name: Terraform Staging
 on:
   push:
     branches:
-      - '**'
+      # - '**'
+      - 'main'
+      - 'staging'
     paths:
       - 'stacks/staging/**'
       - 'modules/**'
@@ -15,8 +17,8 @@ on:
       - main
     paths:
       - 'stacks/staging/**'
-      - 'modules/**'
-      - 'env/staging/**'
+      # - 'modules/**'
+      # - 'env/staging/**'
       - '.github/workflows/terraform-staging.yml'
 
 permissions:
