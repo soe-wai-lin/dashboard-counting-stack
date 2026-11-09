@@ -505,7 +505,7 @@ resource "aws_autoscaling_group" "dashboard_green" {
     strategy = "Rolling"
     preferences {
       min_healthy_percentage = 100
-      max_healthy_percentage = 100
+      max_healthy_percentage = 120
       instance_warmup        = 180
       skip_matching          = true
       auto_rollback          = true
@@ -545,7 +545,7 @@ resource "aws_autoscaling_group" "counting" {
     strategy = "Rolling"
     preferences {
       min_healthy_percentage = 100
-      max_healthy_percentage = 100
+      max_healthy_percentage = 120
       instance_warmup        = 180
       skip_matching          = true
       auto_rollback          = true
