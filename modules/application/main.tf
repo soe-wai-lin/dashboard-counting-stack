@@ -464,7 +464,7 @@ resource "aws_autoscaling_group" "dashboard_pink" {
     strategy = "Rolling"
     preferences {
       min_healthy_percentage = 100
-      max_healthy_percentage = 100
+      max_healthy_percentage = 120
       instance_warmup        = 180
       skip_matching          = true
       auto_rollback          = true
