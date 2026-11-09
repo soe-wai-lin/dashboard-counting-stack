@@ -3,7 +3,9 @@ name: Terraform Staging
 on:
   push:
     branches:
-      - '**'
+      # - '**'
+      - 'main'
+      - 'staging'
     paths:
       - 'stacks/staging/**'
       - 'modules/**'
