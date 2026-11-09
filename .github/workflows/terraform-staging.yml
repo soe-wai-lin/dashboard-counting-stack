@@ -15,8 +15,8 @@ on:
       - main
     paths:
       - 'stacks/staging/**'
-      - 'modules/**'
-      - 'env/staging/**'
+      # - 'modules/**'
+      # - 'env/staging/**'
       - '.github/workflows/terraform-staging.yml'
 
 permissions:
